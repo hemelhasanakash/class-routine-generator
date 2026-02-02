@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Economics Routine World 3-2</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=DotGothic16&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --sky-blue: #70a1ff;
+            --mario-gold: #ffda79;
+            --emerald: #26de81;
+            --azure: #45aaf2;
+            --night-bg: #2f3542;
+            --hud-bg: rgba(0, 0, 0, 0.9);
+        }
+
+        body {
+            font-family: 'Press+Start+2P', cursive;
+            background-color: var(--sky-blue);
+            color: white;
+            image-rendering: pixelated;
+            margin: 0;
+            padding: 10px;
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Responsive HUD */
+        .hud {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            width: 100%;
+            max-width: 1150px;
+            margin: 0 auto 20px auto;
+            text-shadow: 2px 2px 0px #000;
+            font-size: 10px;
+            background: var(--hud-bg);
+            padding: 12px;
+            border: 4px solid #000;
+            position: relative;
+            z-index: 100;
+        }
+
+        @media (min-width: 768px) {
+            .hud {
+                grid-template-columns: repeat(4, 1fr);
+                font-size: 12px;
+                text-align: center;
+            }
+        }
+
+        .nes-container {
+            border: 6px solid black;
+            background: #f1f2f6;
+            box-shadow: 6px 6px 0px rgba(0,0,0,0.3);
+            padding: 0;
+            position: relative;
+            margin-bottom: 30px;
+            width: 100%;
+        }
+
+        .pixel-btn {
+            font-family: 'Press+Start+2P', cursive;
+            background: var(--mario-gold);
+            border: 4px solid black;
+            padding: 10px 12px;
+            color: black;
+            cursor: pointer;
+            box-shadow: 4px 4px 0px black;
+            font-size: 9px;
+            transition: all 0.1s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: manipulation;
+        }
+
+        @media (min-width: 768px) {
+            .pixel-btn { font-size: 10px; padding: 12px 16px; }
+        }
+
+        .pixel-btn:hover { background: #ffeaa7; }
+        .pixel-btn:active {
+            box-shadow: 0px 0px 0px black;
+            transform: translate(4px, 4px);
+        }
+
+        .pixel-btn.active { background: var(--emerald); color: white; }
+
+        /* Table Responsiveness */
+        .table-scroll-container {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            position: relative;
+        }
+
+        /* Horizontal scroll indicator for mobile */
+        .scroll-hint {
+            display: block;
+            text-align: center;
+            font-size: 8px;
+            color: black;
+            padding: 5px;
+            background: #dfe4ea;
+            border-bottom: 2px solid black;
+        }
+
+        @media (min-width: 1024px) { .scroll-hint { display: none; } }
+
+        table { width: 100%; min-width: 800px; border-collapse: collapse; background: white; table-layout: fixed; }
+        th { background: #2f3542; color: white; border: 4px solid black; padding: 10px 5px; font-size: 11px; }
+        td { border: 4px solid black; padding: 0; height: 110px; position: relative; }
+
+        .cell-wrapper { 
+            width: 100%; height: 100%; 
+            display: flex; flex-direction: column; 
+            justify-content: center; align-items: center; 
+            padding: 4px; text-align: center; 
+            cursor: help;
+        }
+
+        .time-cell { background: #2f3542; font-size: 11px; color: var(--mario-gold); }
+
+        .section-a { background: var(--emerald); color: #000; }
+        .section-b { background: var(--azure); color: #fff; }
+        .optional { background: var(--mario-gold); color: #000; }
+        .no-class { background: #dfe4ea; color: #a4b0be; font-size: 10px; }
+
+        /* Tooltip (Disabled on small touch screens to avoid clutter) */
+        #custom-tooltip {
+            position: fixed;
+            z-index: 9999;
+            pointer-events: none;
+            background: #000;
+            border: 4px solid white;
+            padding: 15px;
+            display: none;
+            max-width: 250px;
+            box-shadow: 8px 8px 0px rgba(0,0,0,0.5);
+        }
+
+        /* Mobile Generator Styles */
+        #page-generator {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #f1f2f6;
+            z-index: 2000;
+            display: none;
+            flex-direction: column;
+            color: black;
+            overflow-y: auto;
+        }
+
+        .generator-header {
+            background: #2f3542;
+            color: white;
+            padding: 15px;
+            border-bottom: 6px solid black;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .ground { position: fixed; bottom: 0; left: 0; width: 100%; height: 20px; background: #ffa502; border-top: 4px solid black; z-index: 50; }
+        
+        canvas#export-canvas { display: none; }
+
+        /* Typography sizing for mobile */
+        h1 { font-size: 1.25rem !important; line-height: 1.4; }
+        @media (min-width: 768px) { h1 { font-size: 2rem !important; } }
+    </style>
+</head>
+<body class="flex flex-col items-center">
+
+    <div id="custom-tooltip"></div>
+
+    <div class="hud">
+        <div>HHA<br/>001700</div>
+        <div>COIN<br/><div style="display:inline-block; width:10px; height:10px; background:var(--mario-gold); border:2px solid black;"></div> x 17</div>
+        <div>LVL<br/>3-2</div>
+        <div id="hud-mode">ROUTINE<br/>FULL</div>
+    </div>
+
+    <div id="view-main" class="w-full flex flex-col items-center">
+        <header class="text-center mb-6 px-4">
+            <h1 class="mb-4" style="text-shadow: 3px 3px 0 black;">ROUTINE WORLD</h1>
+            <div class="flex gap-2 flex-wrap justify-center">
+                <button onclick="switchMode('Full')" id="btn-Full" class="pixel-btn active">FULL</button>
+                <button onclick="switchMode('A')" id="btn-A" class="pixel-btn">SEC A</button>
+                <button onclick="switchMode('B')" id="btn-B" class="pixel-btn">SEC B</button>
+                <button onclick="switchMode('Opt')" id="btn-Opt" class="pixel-btn">OPT</button>
+            </div>
+        </header>
+
+        <div class="nes-container max-w-6xl">
+            <div class="scroll-hint">◀ SWIPE TO VIEW FULL SCHEDULE ▶</div>
+            <div class="table-scroll-container">
+                <table id="main-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 120px;">TIME</th>
+                            <th>SUN</th>
+                            <th>MON</th>
+                            <th>TUE</th>
+                            <th>WED</th>
+                            <th>THU</th>
+                        </tr>
+                    </thead>
+                    <tbody id="routine-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="px-4 w-full flex justify-center">
+            <button onclick="toggleGenerator(true)" class="pixel-btn bg-red-500 text-white text-sm md:text-lg p-5 mt-4 mb-20 w-full md:w-auto">
+                [!] GENERATE YOUR OWN ROUTINE
+            </button>
+        </div>
+    </div>
+
+    <div id="page-generator">
+        <div class="generator-header">
+            <div>
+                <h2 class="text-sm md:text-xl">ROUTINE GENERATOR</h2>
+            </div>
+            <button onclick="toggleGenerator(false)" class="pixel-btn" style="background: #ff4757; color:white; padding: 8px 10px;">CLOSE [X]</button>
+        </div>
+
+        <div class="p-4 md:p-8 max-w-4xl mx-auto w-full">
+            <div class="bg-white border-4 md:border-8 border-black p-4 md:p-8 shadow-[8px_8px_0_black]">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div>
+                        <label class="block font-bold mb-3 uppercase text-xs md:text-sm">1. Section</label>
+                        <div class="flex gap-2">
+                            <button onclick="setGenParam('section', 'A')" id="gen-sec-A" class="pixel-btn active flex-1">SEC A</button>
+                            <button onclick="setGenParam('section', 'B')" id="gen-sec-B" class="pixel-btn flex-1">SEC B</button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block font-bold mb-3 uppercase text-xs md:text-sm">2. Optional Course</label>
+                        <select id="gen-opt-select" onchange="setGenParam('optional', this.value)" class="w-full p-4 border-4 border-black font-mono text-xs md:text-sm bg-white">
+                            <option value="307_O">307 - Population Science</option>
+                            <option value="311_O">311 - Health Economics</option>
+                            <option value="312_O">312 - Data Science</option>
+                            <option value="313_O">313 - Agricultural Economics</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="bg-gray-200 p-4 border-4 border-black text-center mb-8">
+                    <p class="text-[9px] md:text-xs">GENERATING: <br class="md:hidden"/><span id="preview-info" class="font-bold">SECTION A + POPULATION SCIENCE</span></p>
+                </div>
+
+                <button onclick="drawAndDownload()" class="pixel-btn active w-full py-6 md:py-8 text-sm md:text-xl" style="background:#2ecc71;">
+                    DOWNLOAD
+                </button>
+                <p class="text-[8px] text-center mt-4 text-gray-500 uppercase">High-res PNG will be saved to your device</p>
+            </div>
+        </div>
+    </div>
+
+    <canvas id="export-canvas" width="2400" height="2300"></canvas>
+    <div class="ground"></div>
+
+    <script>
+        const courseDetails = {
+            "302_A": { code: "302(A)", short: "Econometrics", name: "Econometrics II", prof: "S. M Abdullah", room: "301" },
+            "302_B": { code: "302(B)", short: "Econometrics", name: "Econometrics II", prof: "S. M Abdullah", room: "301/302" },
+            "304_A": { code: "304(A)", short: "Dyn Opt", name: "Dynamic Optimization", prof: "Dr. Md. Deen Islam", room: "301" },
+            "304_B": { code: "304(B)", short: "Dyn Opt", name: "Dynamic Optimization", prof: "Dr. Md. Deen Islam", room: "301" },
+            "308_A": { code: "308(A)", short: "Pub Eco", name: "Public Economics", prof: "Tahia Anan Dhira", room: "301/302" },
+            "308_B": { code: "308(B)", short: "Pub Eco", name: "Public Economics", prof: "Tahia Anan Dhira", room: "301/302" },
+            "307_O": { code: "307(O)", short: "Population", name: "Population Science", prof: "Dr. Aroni Barkat", room: "303/301" },
+            "311_O": { code: "311(O)", short: "Health Eco", name: "Health Economics", prof: "Prof. Dr. Rumana Huque", room: "302/301" },
+            "312_O": { code: "312(O)", short: "Data Sci", name: "Data Science", prof: "Dr. Mohaimen Mansur", room: "302" },
+            "313_O": { code: "313(O)", short: "Agri Eco", name: "Agricultural Economics", prof: "Prof. Farzana Laizu", room: "302" }
+        };
+
+        const rawData = [
+            { time: "08:00-09:20", sun: "302_A", mon: "304_A", tue: "302_B", wed: "311_O", thu: "307_O" },
+            { time: "09:30-10:50", sun: "302_B", mon: "304_B", tue: "302_A", wed: "split_304A_308B", thu: "311_O" },
+            { time: "11:00-12:20", sun: "none", mon: "none", tue: "312_O", wed: "304_B", thu: "312_O" },
+            { time: "12:30-01:50", sun: "313_O", mon: "308_A", tue: "313_O", wed: "308_A", thu: "none" },
+            { time: "02:00-03:20", sun: "none", mon: "308_B", tue: "none", wed: "none", thu: "none" },
+            { time: "03:30-04:50", sun: "307_O", mon: "none", tue: "none", wed: "none", thu: "none" }
+        ];
+
+        let genState = { section: 'A', optional: '307_O' };
+        const tooltip = document.getElementById('custom-tooltip');
+        const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+        function showTooltip(e, key) {
+            if (isTouch) return; // Disable hover tooltips on touch devices for better UX
+            const course = courseDetails[key];
+            if (!course) return;
+            tooltip.style.display = 'block';
+            tooltip.innerHTML = `
+                <div class="tooltip-code">${course.code}</div>
+                <div class="tooltip-name">${course.name}</div>
+                <div class="tooltip-prof">Prof: ${course.prof}</div>
+                <div class="tooltip-room">Room: ${course.room}</div>
+            `;
+            moveTooltip(e);
+        }
+
+        function moveTooltip(e) {
+            const x = e.clientX + 15;
+            const y = e.clientY + 15;
+            const tw = tooltip.offsetWidth;
+            const th = tooltip.offsetHeight;
+            const finalX = (x + tw > window.innerWidth) ? x - tw - 20 : x;
+            const finalY = (y + th > window.innerHeight) ? y - th - 20 : y;
+            tooltip.style.left = finalX + 'px';
+            tooltip.style.top = finalY + 'px';
+        }
+
+        function hideTooltip() {
+            tooltip.style.display = 'none';
+        }
+
+        function getCellMarkup(key, mode) {
+            if (!key || key === "none") return `<div class="cell-wrapper no-class">---</div>`;
+            
+            if (key === "split_304A_308B") {
+                if (mode === 'A') return getCellMarkup("304_A", mode);
+                if (mode === 'B') return getCellMarkup("308_B", mode);
+                
+                const cA = courseDetails["304_A"];
+                const cB = courseDetails["308_B"];
+
+                return `<div class="flex h-full w-full">
+                    <div class="section-a flex-1 flex flex-col justify-center items-center border-r-2 border-black" 
+                         onmousemove="showTooltip(event, '304_A')" onmouseleave="hideTooltip()">
+                         <span class="text-[10px] md:text-[12px] font-bold">${cA.short}</span>
+                    </div>
+                    <div class="section-b flex-1 flex flex-col justify-center items-center"
+                         onmousemove="showTooltip(event, '308_B')" onmouseleave="hideTooltip()">
+                         <span class="text-[10px] md:text-[12px] font-bold">${cB.short}</span>
+                    </div>
+                </div>`;
+            }
+
+            const course = courseDetails[key];
+            const type = key.split('_')[1];
+            const cls = type === 'O' ? 'optional' : (type === 'A' ? 'section-a' : 'section-b');
+            
+            return `
+            <div class="cell-wrapper ${cls}" onmousemove="showTooltip(event, '${key}')" onmouseleave="hideTooltip()">
+                <span class="text-[11px] md:text-[14px] font-bold mb-1">${course.code}</span>
+                <span class="text-[9px] md:text-[11px] leading-tight mb-2">${course.short}</span>
+                <span class="text-[8px] md:text-[10px] font-bold opacity-80">R-${course.room}</span>
+            </div>`;
+        }
+
+        function switchMode(mode) {
+            document.querySelectorAll('#view-main .pixel-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`btn-${mode}`).classList.add('active');
+            document.getElementById('hud-mode').innerHTML = `ROUTINE<br/>${mode.toUpperCase()}`;
+            const body = document.getElementById('routine-body');
+            body.innerHTML = '';
+            rawData.forEach(row => {
+                const tr = document.createElement('tr');
+                let html = `<td class="time-cell font-bold text-center">${row.time.replace('-', '<br/>')}</td>`;
+                ['sun', 'mon', 'tue', 'wed', 'thu'].forEach(day => {
+                    let k = row[day];
+                    let visible = mode === 'Full' || (k !== 'none' && (k.includes('_'+mode) || k.includes('_O') || k === 'split_304A_308B'));
+                    html += `<td>${visible ? getCellMarkup(k, mode) : getCellMarkup('none')}</td>`;
+                });
+                tr.innerHTML = html;
+                body.appendChild(tr);
+            });
+        }
+
+        function toggleGenerator(show) {
+            document.getElementById('page-generator').style.display = show ? 'flex' : 'none';
+            document.body.style.overflow = show ? 'hidden' : 'auto';
+        }
+
+        function setGenParam(p, v) {
+            genState[p] = v;
+            document.getElementById('gen-sec-A').classList.toggle('active', genState.section === 'A');
+            document.getElementById('gen-sec-B').classList.toggle('active', genState.section === 'B');
+            document.getElementById('preview-info').innerText = `SECTION ${genState.section} + ${courseDetails[genState.optional].name.toUpperCase()}`;
+        }
+
+        async function drawAndDownload() {
+            const btn = event.currentTarget;
+            const originalText = btn.innerText;
+            btn.innerText = "WAITING...";
+            btn.disabled = true;
+
+            await document.fonts.ready;
+            const canvas = document.getElementById('export-canvas');
+            const ctx = canvas.getContext('2d');
+
+            const W = 2400; const H = 2300;
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, W, H);
+            
+            ctx.strokeStyle = "#000000";
+            ctx.lineWidth = 30;
+            ctx.strokeRect(40, 40, W-80, H-80);
+
+            ctx.fillStyle = "#000000";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.font = "bold 90px 'Press Start 2P'";
+            ctx.fillText("DEPARTMENT OF ECONOMICS, DU", W/2, 210);
+            
+            ctx.font = "bold 70px 'Press Start 2P'";
+            ctx.fillStyle = "#ff4757";
+            ctx.fillText(`17TH BATCH | SECTION ${genState.section}`, W/2, 330);
+
+            const startX = 120; const startY = 460;
+            const colW = (W - 240) / 6;
+            const rowH = (H - 950) / 7;
+            const days = ["TIME", "SUN", "MON", "TUE", "WED", "THU"];
+
+            ctx.font = "bold 42px 'Press Start 2P'";
+            days.forEach((day, i) => {
+                const dx = startX + i*colW;
+                ctx.fillStyle = "#2f3542";
+                ctx.fillRect(dx, startY, colW, rowH);
+                ctx.strokeStyle = "black";
+                ctx.lineWidth = 14;
+                ctx.strokeRect(dx, startY, colW, rowH);
+                ctx.fillStyle = "#ffffff";
+                ctx.fillText(day, dx + colW/2, startY + rowH/2);
+            });
+
+            rawData.forEach((row, rIdx) => {
+                const y = startY + (rIdx + 1) * rowH;
+                ctx.fillStyle = "#2f3542";
+                ctx.fillRect(startX, y, colW, rowH);
+                ctx.strokeRect(startX, y, colW, rowH);
+                ctx.fillStyle = "#ffda79";
+                ctx.font = "bold 42px 'Press Start 2P'";
+                const timeParts = row.time.split('-');
+                ctx.fillText(timeParts[0], startX + colW/2, y + rowH * 0.35);
+                ctx.fillText(timeParts[1], startX + colW/2, y + rowH * 0.65);
+
+                ["sun", "mon", "tue", "wed", "thu"].forEach((day, dIdx) => {
+                    const x = startX + (dIdx + 1) * colW;
+                    let key = row[day];
+                    let isVisible = false;
+
+                    if (key === "split_304A_308B") {
+                        key = (genState.section === 'A') ? '304_A' : '308_B';
+                        isVisible = true;
+                    } else if (key !== "none") {
+                        const type = key.split('_')[1];
+                        if (type === genState.section || key === genState.optional) isVisible = true;
+                    }
+
+                    ctx.fillStyle = isVisible ? (key.includes('_O') ? "#ffda79" : (genState.section === 'A' ? "#26de81" : "#45aaf2")) : "#f8f9fa";
+                    ctx.fillRect(x, y, colW, rowH);
+                    ctx.strokeRect(x, y, colW, rowH);
+
+                    if (isVisible) {
+                        const course = courseDetails[key];
+                        ctx.fillStyle = (key.includes('_B') && !key.includes('_O')) ? "#ffffff" : "#000000";
+                        ctx.font = "bold 44px 'Press Start 2P'";
+                        ctx.fillText(course.code.split('(')[0], x + colW/2, y + rowH * 0.25);
+                        ctx.font = "bold 34px 'Press Start 2P'";
+                        const words = course.name.split(' ');
+                        const line1 = words.slice(0, 2).join(' ');
+                        const line2 = words.slice(2).join(' ');
+                        if(line2) {
+                            ctx.fillText(line1, x + colW/2, y + rowH * 0.48);
+                            ctx.fillText(line2, x + colW/2, y + rowH * 0.63);
+                        } else {
+                            ctx.fillText(line1, x + colW/2, y + rowH * 0.55);
+                        }
+                        ctx.font = "bold 40px 'Press Start 2P'";
+                        ctx.fillStyle = (key.includes('_B') && !key.includes('_O')) ? "rgba(255,255,255,0.9)" : "rgba(0,0,0,0.8)";
+                        ctx.fillText(`R-${course.room}`, x + colW/2, y + rowH * 0.86);
+                    } else {
+                        ctx.fillStyle = "#ced4da";
+                        ctx.font = "bold 32px 'Press Start 2P'";
+                        ctx.fillText("---", x + colW/2, y + rowH/2);
+                    }
+                });
+            });
+
+            ctx.textBaseline = "alphabetic";
+            ctx.fillStyle = "#2f3542";
+            ctx.fillRect(100, H - 360, W - 200, 260);
+            ctx.strokeStyle = "black";
+            ctx.lineWidth = 10;
+            ctx.strokeRect(100, H - 360, W - 200, 260);
+
+            ctx.fillStyle = "#ffffff";
+            ctx.textAlign = "left";
+            ctx.font = "bold 45px 'Press Start 2P'";
+            ctx.fillText(`OPTIONAL COURSE CHOSEN:`, 150, H - 280);
+            
+            ctx.font = "bold 65px 'Press Start 2P'";
+            ctx.fillStyle = "#ffda79";
+            ctx.fillText(`${courseDetails[genState.optional].name.toUpperCase()}`, 150, H - 170);
+            
+            ctx.fillStyle = "#ffffff";
+            ctx.textAlign = "right";
+            ctx.font = "bold 35px 'Press Start 2P'";
+            ctx.fillText("ECONOMICS UNIVERSITY OF DHAKA", W - 150, H - 230);
+            ctx.font = "bold 24px 'Press Start 2P'";
+            ctx.fillText("6TH SEMESTER ACADEMIC RECORD | WORLD 3-2", W - 150, H - 170);
+
+            const optName = courseDetails[genState.optional].name;
+            const link = document.createElement('a');
+            link.download = `Section ${genState.section} with ${optName}.png`;
+            link.href = canvas.toDataURL('image/png', 1.0);
+            link.click();
+            
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }
+
+        window.onload = () => switchMode('Full');
+    </script>
+</body>
+</html>
