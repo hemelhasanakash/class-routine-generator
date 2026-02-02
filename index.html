@@ -98,7 +98,6 @@
             position: relative;
         }
 
-        /* Horizontal scroll indicator for mobile */
         .scroll-hint {
             display: block;
             text-align: center;
@@ -120,7 +119,6 @@
             display: flex; flex-direction: column; 
             justify-content: center; align-items: center; 
             padding: 4px; text-align: center; 
-            cursor: help;
         }
 
         .time-cell { background: #2f3542; font-size: 11px; color: var(--mario-gold); }
@@ -130,20 +128,7 @@
         .optional { background: var(--mario-gold); color: #000; }
         .no-class { background: #dfe4ea; color: #a4b0be; font-size: 10px; }
 
-        /* Tooltip (Disabled on small touch screens to avoid clutter) */
-        #custom-tooltip {
-            position: fixed;
-            z-index: 9999;
-            pointer-events: none;
-            background: #000;
-            border: 4px solid white;
-            padding: 15px;
-            display: none;
-            max-width: 250px;
-            box-shadow: 8px 8px 0px rgba(0,0,0,0.5);
-        }
-
-        /* Mobile Generator Styles */
+        /* Generator Styles */
         #page-generator {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -168,18 +153,41 @@
             z-index: 10;
         }
 
+        /* Fallback Viewport for Messenger */
+        #mobile-save-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 3000;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            text-align: center;
+        }
+
+        #result-image-preview {
+            max-width: 100%;
+            max-height: 70vh;
+            border: 4px solid white;
+            margin-bottom: 20px;
+        }
+
         .ground { position: fixed; bottom: 0; left: 0; width: 100%; height: 20px; background: #ffa502; border-top: 4px solid black; z-index: 50; }
         
         canvas#export-canvas { display: none; }
-
-        /* Typography sizing for mobile */
-        h1 { font-size: 1.25rem !important; line-height: 1.4; }
-        @media (min-width: 768px) { h1 { font-size: 2rem !important; } }
     </style>
 </head>
 <body class="flex flex-col items-center">
 
-    <div id="custom-tooltip"></div>
+    <!-- Mobile Save Overlay (Fix for Messenger/FB browser) -->
+    <div id="mobile-save-overlay">
+        <h2 class="text-white text-xs mb-4">IMAGE GENERATED!</h2>
+        <img id="result-image-preview" src="" alt="Routine Preview">
+        <p class="text-yellow-400 text-[10px] mb-6">LONG-PRESS (HOLD) THE IMAGE ABOVE<br>AND SELECT "SAVE IMAGE" OR "DOWNLOAD"</p>
+        <button onclick="closeOverlay()" class="pixel-btn" style="background:#ff4757; color:white;">BACK TO GENERATOR</button>
+    </div>
 
     <div class="hud">
         <div>HHA<br/>001700</div>
@@ -190,7 +198,7 @@
 
     <div id="view-main" class="w-full flex flex-col items-center">
         <header class="text-center mb-6 px-4">
-            <h1 class="mb-4" style="text-shadow: 3px 3px 0 black;">ROUTINE WORLD</h1>
+            <h1 class="mb-4 text-xl md:text-3xl" style="text-shadow: 3px 3px 0 black;">ROUTINE WORLD</h1>
             <div class="flex gap-2 flex-wrap justify-center">
                 <button onclick="switchMode('Full')" id="btn-Full" class="pixel-btn active">FULL</button>
                 <button onclick="switchMode('A')" id="btn-A" class="pixel-btn">SEC A</button>
@@ -205,7 +213,7 @@
                 <table id="main-table">
                     <thead>
                         <tr>
-                            <th style="width: 120px;">TIME</th>
+                            <th style="width: 100px;">TIME</th>
                             <th>SUN</th>
                             <th>MON</th>
                             <th>TUE</th>
@@ -219,64 +227,61 @@
         </div>
 
         <div class="px-4 w-full flex justify-center">
-            <button onclick="toggleGenerator(true)" class="pixel-btn bg-red-500 text-white text-sm md:text-lg p-5 mt-4 mb-20 w-full md:w-auto">
-                [!] GENERATE YOUR OWN ROUTINE
+            <button onclick="toggleGenerator(true)" class="pixel-btn bg-red-500 text-white text-sm p-5 mt-4 mb-20 w-full md:w-auto shadow-[6px_6px_0_black]">
+                [!] GENERATE & DOWNLOAD ROUTINE
             </button>
         </div>
     </div>
 
+    <!-- Generator Interface -->
     <div id="page-generator">
         <div class="generator-header">
-            <div>
-                <h2 class="text-sm md:text-xl">ROUTINE GENERATOR</h2>
-            </div>
-            <button onclick="toggleGenerator(false)" class="pixel-btn" style="background: #ff4757; color:white; padding: 8px 10px;">CLOSE [X]</button>
+            <h2 class="text-xs">ROUTINE GENERATOR</h2>
+            <button onclick="toggleGenerator(false)" class="pixel-btn" style="background: #ff4757; color:white; padding: 5px 8px; font-size:8px;">CLOSE [X]</button>
         </div>
 
-        <div class="p-4 md:p-8 max-w-4xl mx-auto w-full">
-            <div class="bg-white border-4 md:border-8 border-black p-4 md:p-8 shadow-[8px_8px_0_black]">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                    <div>
-                        <label class="block font-bold mb-3 uppercase text-xs md:text-sm">1. Section</label>
-                        <div class="flex gap-2">
-                            <button onclick="setGenParam('section', 'A')" id="gen-sec-A" class="pixel-btn active flex-1">SEC A</button>
-                            <button onclick="setGenParam('section', 'B')" id="gen-sec-B" class="pixel-btn flex-1">SEC B</button>
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block font-bold mb-3 uppercase text-xs md:text-sm">2. Optional Course</label>
-                        <select id="gen-opt-select" onchange="setGenParam('optional', this.value)" class="w-full p-4 border-4 border-black font-mono text-xs md:text-sm bg-white">
-                            <option value="307_O">307 - Population Science</option>
-                            <option value="311_O">311 - Health Economics</option>
-                            <option value="312_O">312 - Data Science</option>
-                            <option value="313_O">313 - Agricultural Economics</option>
-                        </select>
+        <div class="p-4 max-w-4xl mx-auto w-full">
+            <div class="bg-white border-4 border-black p-4 shadow-[6px_6px_0_black] text-black">
+                <div class="mb-6">
+                    <label class="block font-bold mb-2 uppercase text-[10px]">1. Select Section</label>
+                    <div class="flex gap-2">
+                        <button onclick="setGenParam('section', 'A')" id="gen-sec-A" class="pixel-btn active flex-1">SEC A</button>
+                        <button onclick="setGenParam('section', 'B')" id="gen-sec-B" class="pixel-btn flex-1">SEC B</button>
                     </div>
                 </div>
-
-                <div class="bg-gray-200 p-4 border-4 border-black text-center mb-8">
-                    <p class="text-[9px] md:text-xs">GENERATING: <br class="md:hidden"/><span id="preview-info" class="font-bold">SECTION A + POPULATION SCIENCE</span></p>
+                <div class="mb-6">
+                    <label class="block font-bold mb-2 uppercase text-[10px]">2. Select Optional</label>
+                    <select id="gen-opt-select" onchange="setGenParam('optional', this.value)" class="w-full p-3 border-4 border-black font-mono text-xs bg-white">
+                        <option value="307_O">307 - Population Science</option>
+                        <option value="311_O">311 - Health Economics</option>
+                        <option value="312_O">312 - Data Science</option>
+                        <option value="313_O">313 - Agricultural Economics</option>
+                    </select>
                 </div>
 
-                <button onclick="drawAndDownload()" class="pixel-btn active w-full py-6 md:py-8 text-sm md:text-xl" style="background:#2ecc71;">
-                    DOWNLOAD
+                <div class="bg-gray-200 p-3 border-2 border-black text-center mb-6">
+                    <p class="text-[9px] uppercase">Preview: <span id="preview-info" class="font-bold">SECTION A + POPULATION</span></p>
+                </div>
+
+                <button id="main-download-btn" onclick="drawAndDownload()" class="pixel-btn active w-full py-5 text-xs" style="background:#2ecc71;">
+                    GENERATE IMAGE
                 </button>
-                <p class="text-[8px] text-center mt-4 text-gray-500 uppercase">High-res PNG will be saved to your device</p>
+                <p class="text-[8px] text-center mt-3 text-gray-500 uppercase">Will open in a viewer for easy saving</p>
             </div>
         </div>
     </div>
 
-    <canvas id="export-canvas" width="2400" height="2300"></canvas>
+    <canvas id="export-canvas" width="2000" height="1800"></canvas>
     <div class="ground"></div>
 
     <script>
         const courseDetails = {
             "302_A": { code: "302(A)", short: "Econometrics", name: "Econometrics II", prof: "S. M Abdullah", room: "301" },
-            "302_B": { code: "302(B)", short: "Econometrics", name: "Econometrics II", prof: "S. M Abdullah", room: "301/302" },
+            "302_B": { code: "302(B)", short: "Econometrics", name: "Econometrics II", prof: "S. M Abdullah", room: "302/301" },
             "304_A": { code: "304(A)", short: "Dyn Opt", name: "Dynamic Optimization", prof: "Dr. Md. Deen Islam", room: "301" },
             "304_B": { code: "304(B)", short: "Dyn Opt", name: "Dynamic Optimization", prof: "Dr. Md. Deen Islam", room: "301" },
             "308_A": { code: "308(A)", short: "Pub Eco", name: "Public Economics", prof: "Tahia Anan Dhira", room: "301/302" },
-            "308_B": { code: "308(B)", short: "Pub Eco", name: "Public Economics", prof: "Tahia Anan Dhira", room: "301/302" },
+            "308_B": { code: "308(B)", short: "Pub Eco", name: "Public Economics", prof: "Tahia Anan Dhira", room: "302/301" },
             "307_O": { code: "307(O)", short: "Population", name: "Population Science", prof: "Dr. Aroni Barkat", room: "303/301" },
             "311_O": { code: "311(O)", short: "Health Eco", name: "Health Economics", prof: "Prof. Dr. Rumana Huque", room: "302/301" },
             "312_O": { code: "312(O)", short: "Data Sci", name: "Data Science", prof: "Dr. Mohaimen Mansur", room: "302" },
@@ -293,70 +298,18 @@
         ];
 
         let genState = { section: 'A', optional: '307_O' };
-        const tooltip = document.getElementById('custom-tooltip');
-        const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-
-        function showTooltip(e, key) {
-            if (isTouch) return; // Disable hover tooltips on touch devices for better UX
-            const course = courseDetails[key];
-            if (!course) return;
-            tooltip.style.display = 'block';
-            tooltip.innerHTML = `
-                <div class="tooltip-code">${course.code}</div>
-                <div class="tooltip-name">${course.name}</div>
-                <div class="tooltip-prof">Prof: ${course.prof}</div>
-                <div class="tooltip-room">Room: ${course.room}</div>
-            `;
-            moveTooltip(e);
-        }
-
-        function moveTooltip(e) {
-            const x = e.clientX + 15;
-            const y = e.clientY + 15;
-            const tw = tooltip.offsetWidth;
-            const th = tooltip.offsetHeight;
-            const finalX = (x + tw > window.innerWidth) ? x - tw - 20 : x;
-            const finalY = (y + th > window.innerHeight) ? y - th - 20 : y;
-            tooltip.style.left = finalX + 'px';
-            tooltip.style.top = finalY + 'px';
-        }
-
-        function hideTooltip() {
-            tooltip.style.display = 'none';
-        }
 
         function getCellMarkup(key, mode) {
             if (!key || key === "none") return `<div class="cell-wrapper no-class">---</div>`;
-            
             if (key === "split_304A_308B") {
                 if (mode === 'A') return getCellMarkup("304_A", mode);
                 if (mode === 'B') return getCellMarkup("308_B", mode);
-                
-                const cA = courseDetails["304_A"];
-                const cB = courseDetails["308_B"];
-
-                return `<div class="flex h-full w-full">
-                    <div class="section-a flex-1 flex flex-col justify-center items-center border-r-2 border-black" 
-                         onmousemove="showTooltip(event, '304_A')" onmouseleave="hideTooltip()">
-                         <span class="text-[10px] md:text-[12px] font-bold">${cA.short}</span>
-                    </div>
-                    <div class="section-b flex-1 flex flex-col justify-center items-center"
-                         onmousemove="showTooltip(event, '308_B')" onmouseleave="hideTooltip()">
-                         <span class="text-[10px] md:text-[12px] font-bold">${cB.short}</span>
-                    </div>
-                </div>`;
+                return `<div class="flex h-full w-full"><div class="section-a flex-1 flex items-center justify-center border-r border-black">A</div><div class="section-b flex-1 flex items-center justify-center">B</div></div>`;
             }
-
             const course = courseDetails[key];
             const type = key.split('_')[1];
             const cls = type === 'O' ? 'optional' : (type === 'A' ? 'section-a' : 'section-b');
-            
-            return `
-            <div class="cell-wrapper ${cls}" onmousemove="showTooltip(event, '${key}')" onmouseleave="hideTooltip()">
-                <span class="text-[11px] md:text-[14px] font-bold mb-1">${course.code}</span>
-                <span class="text-[9px] md:text-[11px] leading-tight mb-2">${course.short}</span>
-                <span class="text-[8px] md:text-[10px] font-bold opacity-80">R-${course.room}</span>
-            </div>`;
+            return `<div class="cell-wrapper ${cls}"><span class="text-[10px] font-bold">${course.code}</span><span class="text-[8px] leading-tight">${course.short}</span></div>`;
         }
 
         function switchMode(mode) {
@@ -387,52 +340,46 @@
             genState[p] = v;
             document.getElementById('gen-sec-A').classList.toggle('active', genState.section === 'A');
             document.getElementById('gen-sec-B').classList.toggle('active', genState.section === 'B');
-            document.getElementById('preview-info').innerText = `SECTION ${genState.section} + ${courseDetails[genState.optional].name.toUpperCase()}`;
+            document.getElementById('preview-info').innerText = `SECTION ${genState.section} + ${courseDetails[genState.optional].short.toUpperCase()}`;
+        }
+
+        function closeOverlay() {
+            document.getElementById('mobile-save-overlay').style.display = 'none';
         }
 
         async function drawAndDownload() {
-            const btn = event.currentTarget;
-            const originalText = btn.innerText;
-            btn.innerText = "WAITING...";
+            const btn = document.getElementById('main-download-btn');
+            btn.innerText = "RENDERING...";
             btn.disabled = true;
 
             await document.fonts.ready;
             const canvas = document.getElementById('export-canvas');
             const ctx = canvas.getContext('2d');
+            const W = 2000; const H = 1800;
 
-            const W = 2400; const H = 2300;
             ctx.fillStyle = "#ffffff";
             ctx.fillRect(0, 0, W, H);
-            
-            ctx.strokeStyle = "#000000";
-            ctx.lineWidth = 30;
-            ctx.strokeRect(40, 40, W-80, H-80);
+            ctx.strokeStyle = "#000000"; ctx.lineWidth = 20;
+            ctx.strokeRect(20, 20, W-40, H-40);
 
-            ctx.fillStyle = "#000000";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.font = "bold 90px 'Press Start 2P'";
-            ctx.fillText("DEPARTMENT OF ECONOMICS, DU", W/2, 210);
-            
-            ctx.font = "bold 70px 'Press Start 2P'";
-            ctx.fillStyle = "#ff4757";
-            ctx.fillText(`17TH BATCH | SECTION ${genState.section}`, W/2, 330);
+            ctx.fillStyle = "#000000"; ctx.textAlign = "center";
+            ctx.font = "bold 60px 'Press Start 2P'";
+            ctx.fillText("ECONOMICS WORLD 3-2", W/2, 120);
+            ctx.font = "30px 'Press Start 2P'";
+            ctx.fillText(`SECTION ${genState.section} | ${courseDetails[genState.optional].name.toUpperCase()}`, W/2, 200);
 
-            const startX = 120; const startY = 460;
-            const colW = (W - 240) / 6;
-            const rowH = (H - 950) / 7;
+            const startX = 100; const startY = 280;
+            const colW = (W - 200) / 6;
+            const rowH = (H - 450) / 7;
+
             const days = ["TIME", "SUN", "MON", "TUE", "WED", "THU"];
-
-            ctx.font = "bold 42px 'Press Start 2P'";
+            ctx.font = "bold 28px 'Press Start 2P'";
             days.forEach((day, i) => {
-                const dx = startX + i*colW;
                 ctx.fillStyle = "#2f3542";
-                ctx.fillRect(dx, startY, colW, rowH);
-                ctx.strokeStyle = "black";
-                ctx.lineWidth = 14;
-                ctx.strokeRect(dx, startY, colW, rowH);
+                ctx.fillRect(startX + i*colW, startY, colW, rowH);
+                ctx.strokeRect(startX + i*colW, startY, colW, rowH);
                 ctx.fillStyle = "#ffffff";
-                ctx.fillText(day, dx + colW/2, startY + rowH/2);
+                ctx.fillText(day, startX + i*colW + colW/2, startY + rowH/2 + 10);
             });
 
             rawData.forEach((row, rIdx) => {
@@ -441,84 +388,40 @@
                 ctx.fillRect(startX, y, colW, rowH);
                 ctx.strokeRect(startX, y, colW, rowH);
                 ctx.fillStyle = "#ffda79";
-                ctx.font = "bold 42px 'Press Start 2P'";
-                const timeParts = row.time.split('-');
-                ctx.fillText(timeParts[0], startX + colW/2, y + rowH * 0.35);
-                ctx.fillText(timeParts[1], startX + colW/2, y + rowH * 0.65);
+                ctx.font = "bold 24px 'Press Start 2P'";
+                ctx.fillText(row.time.split('-')[0], startX + colW/2, y + rowH * 0.4);
+                ctx.fillText(row.time.split('-')[1], startX + colW/2, y + rowH * 0.7);
 
                 ["sun", "mon", "tue", "wed", "thu"].forEach((day, dIdx) => {
                     const x = startX + (dIdx + 1) * colW;
                     let key = row[day];
-                    let isVisible = false;
-
-                    if (key === "split_304A_308B") {
-                        key = (genState.section === 'A') ? '304_A' : '308_B';
-                        isVisible = true;
-                    } else if (key !== "none") {
-                        const type = key.split('_')[1];
-                        if (type === genState.section || key === genState.optional) isVisible = true;
-                    }
-
-                    ctx.fillStyle = isVisible ? (key.includes('_O') ? "#ffda79" : (genState.section === 'A' ? "#26de81" : "#45aaf2")) : "#f8f9fa";
+                    if (key === "split_304A_308B") key = (genState.section === 'A') ? '304_A' : '308_B';
+                    
+                    let isVisible = (key !== "none" && (key.includes('_'+genState.section) || key === genState.optional));
+                    
+                    ctx.fillStyle = isVisible ? (key.includes('_O') ? "#ffda79" : (genState.section === 'A' ? "#26de81" : "#45aaf2")) : "#f1f2f6";
                     ctx.fillRect(x, y, colW, rowH);
                     ctx.strokeRect(x, y, colW, rowH);
 
                     if (isVisible) {
-                        const course = courseDetails[key];
-                        ctx.fillStyle = (key.includes('_B') && !key.includes('_O')) ? "#ffffff" : "#000000";
-                        ctx.font = "bold 44px 'Press Start 2P'";
-                        ctx.fillText(course.code.split('(')[0], x + colW/2, y + rowH * 0.25);
-                        ctx.font = "bold 34px 'Press Start 2P'";
-                        const words = course.name.split(' ');
-                        const line1 = words.slice(0, 2).join(' ');
-                        const line2 = words.slice(2).join(' ');
-                        if(line2) {
-                            ctx.fillText(line1, x + colW/2, y + rowH * 0.48);
-                            ctx.fillText(line2, x + colW/2, y + rowH * 0.63);
-                        } else {
-                            ctx.fillText(line1, x + colW/2, y + rowH * 0.55);
-                        }
-                        ctx.font = "bold 40px 'Press Start 2P'";
-                        ctx.fillStyle = (key.includes('_B') && !key.includes('_O')) ? "rgba(255,255,255,0.9)" : "rgba(0,0,0,0.8)";
-                        ctx.fillText(`R-${course.room}`, x + colW/2, y + rowH * 0.86);
-                    } else {
-                        ctx.fillStyle = "#ced4da";
-                        ctx.font = "bold 32px 'Press Start 2P'";
-                        ctx.fillText("---", x + colW/2, y + rowH/2);
+                        const c = courseDetails[key];
+                        ctx.fillStyle = "#000000";
+                        ctx.font = "bold 26px 'Press Start 2P'";
+                        ctx.fillText(c.code, x + colW/2, y + rowH * 0.35);
+                        ctx.font = "20px 'Press Start 2P'";
+                        ctx.fillText(c.short, x + colW/2, y + rowH * 0.65);
+                        ctx.font = "16px 'Press Start 2P'";
+                        ctx.fillText(`R-${c.room}`, x + colW/2, y + rowH * 0.85);
                     }
                 });
             });
 
-            ctx.textBaseline = "alphabetic";
-            ctx.fillStyle = "#2f3542";
-            ctx.fillRect(100, H - 360, W - 200, 260);
-            ctx.strokeStyle = "black";
-            ctx.lineWidth = 10;
-            ctx.strokeRect(100, H - 360, W - 200, 260);
+            const dataUrl = canvas.toDataURL('image/png');
+            const previewImg = document.getElementById('result-image-preview');
+            previewImg.src = dataUrl;
+            document.getElementById('mobile-save-overlay').style.display = 'flex';
 
-            ctx.fillStyle = "#ffffff";
-            ctx.textAlign = "left";
-            ctx.font = "bold 45px 'Press Start 2P'";
-            ctx.fillText(`OPTIONAL COURSE CHOSEN:`, 150, H - 280);
-            
-            ctx.font = "bold 65px 'Press Start 2P'";
-            ctx.fillStyle = "#ffda79";
-            ctx.fillText(`${courseDetails[genState.optional].name.toUpperCase()}`, 150, H - 170);
-            
-            ctx.fillStyle = "#ffffff";
-            ctx.textAlign = "right";
-            ctx.font = "bold 35px 'Press Start 2P'";
-            ctx.fillText("ECONOMICS UNIVERSITY OF DHAKA", W - 150, H - 230);
-            ctx.font = "bold 24px 'Press Start 2P'";
-            ctx.fillText("6TH SEMESTER ACADEMIC RECORD | WORLD 3-2", W - 150, H - 170);
-
-            const optName = courseDetails[genState.optional].name;
-            const link = document.createElement('a');
-            link.download = `Section ${genState.section} with ${optName}.png`;
-            link.href = canvas.toDataURL('image/png', 1.0);
-            link.click();
-            
-            btn.innerText = originalText;
+            btn.innerText = "GENERATE IMAGE";
             btn.disabled = false;
         }
 
